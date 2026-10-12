@@ -344,4 +344,5 @@ curl -N -G 'http://127.0.0.1:8005/api/chat' \
 </details>
 <img width="3018" height="1536" alt="image" src="https://github.com/user-attachments/assets/dbb0e350-0b22-4db7-942a-7cc9267c2fd4" />
 <img width="3024" height="1526" alt="image" src="https://github.com/user-attachments/assets/b1a02ede-d51f-4541-85c6-b9411889ccb0" /><div align="center">
+<img width="3020" height="1488" alt="image" src="https://github.com/user-attachments/assets/fc0956db-922e-47ea-897a-1c5a324b37af" />
 
