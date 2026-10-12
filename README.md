@@ -1,6 +1,5 @@
 <img width="3018" height="1536" alt="image" src="https://github.com/user-attachments/assets/dbb0e350-0b22-4db7-942a-7cc9267c2fd4" />
-<img width="3024" height="1526" alt="image" src="https://github.com/user-attachments/assets/b1a02ede-d51f-4541-85c6-b9411889ccb0" />
-<div align="center">
+<img width="3024" height="1526" alt="image" src="https://github.com/user-attachments/assets/b1a02ede-d51f-4541-85c6-b9411889ccb0" /><div align="center">
 
 # AIOps · SQL Insight
 
@@ -11,7 +10,7 @@
 ![MySQL](https://img.shields.io/badge/Database-MySQL-4479A1?logo=mysql&logoColor=white)
 ![LLM](https://img.shields.io/badge/LLM-DashScope%20%7C%20Ollama-6554C0)
 
-[快速开始](#快速开始) · [系统架构](#系统架构) · [知识库流水线](#知识库流水线) · [接口说明](#接口说明) · [开发与测试](#开发与测试)
+[快速开始](#快速开始) · [系统架构](#系统架构) · [接口说明](#接口说明) · [开发与测试](#开发与测试)
 
 </div>
 
@@ -19,10 +18,7 @@
 
 AIOps 将运维数据库、故障知识库和执行工具接入同一个对话界面。用户提出问题后，规划智能体识别任务，领域智能体通过工具获取数据和证据，最后生成中文分析报告。需要修改文件或执行命令时，系统按照当前权限模式进入确认流程。
 
-仓库包含两个主要模块：
-
-- **`it_agent/`：在线运维应用。** FastAPI 提供 API 和单页 Web 界面，支持 SQL 调查、知识检索、本机与 SSH 操作、会话记忆和流式回答。
-- **`handle/`：知识库离线流水线。** 完成文档生成、解析、分块、向量化、混合检索、重排和 RAG 评估，为知识检索提供语料与索引。
+在线运维应用位于 `it_agent/`，由 FastAPI 提供 API 和单页 Web 界面，支持 SQL 调查、知识检索、本机与 SSH 操作、会话记忆和流式回答。
 
 适合探索多智能体编排、Text-to-SQL、检索增强生成，以及需要人工确认的运维工具调用场景。
 
@@ -104,7 +100,6 @@ flowchart TD
 | 记忆与缓存 | Redis |
 | 检索与重排 | Milvus、Elasticsearch、jieba、BM25、RRF、Qwen Rerank |
 | 远程操作 | Paramiko、凭据解密 |
-| 文档与评估 | python-docx、pypdf、BeautifulSoup、Ragas |
 
 ## 快速开始
 
@@ -168,9 +163,9 @@ OLLAMA_MODEL=qwen3:8b
 
 本地模型需要支持工具调用，并提前拉取模型。知识库和 SQL 召回默认使用 `nomic-embed-text` 做 embedding；它与对话模型分别配置。
 
-**数据库准备：** 表结构与语义说明见 [IT 监控系统数据表说明](IT监控系统数据表说明文档.md)、[数据库重构说明](重构数据库介绍.md) 和 [SQL 元数据配置](it_agent/backend/sql/schema_meta.yaml)。[测试种子数据](docs/data/seed_data_realistic_20260731.sql)包含建表与样例数据，也包含 `DROP TABLE IF EXISTS`，仅适合核对后用于隔离测试库。已有数据库应按需要检查 [数据与迁移脚本](docs/data/)，避免直接覆盖业务表。
+**数据库准备：** 业务数据库需要与应用使用的表结构匹配，SQL 召回的表、字段和指标语义由 `it_agent/backend/sql/schema_meta.yaml` 配置。`docs/data/seed_data_realistic_20260731.sql` 包含建表与样例数据，也包含 `DROP TABLE IF EXISTS`，仅适合核对后用于隔离测试库。已有数据库应按需要检查 `docs/data/` 中的迁移脚本，避免直接覆盖业务表。
 
-**迁移到新环境：** `backend/config.py` 中的 Redis 地址、Milvus 地址、ES 地址、元数据库名、权限默认模式和 `RAG_CORPUS` 当前为代码配置。尤其要将 `RAG_CORPUS` 调整为自己仓库中 `handle/stage3_chunk/method4_h3_chunk/output/all_chunks.jsonl` 的实际路径。仅在 `.env` 添加同名变量不会覆盖这些常量。
+**迁移到新环境：** `backend/config.py` 中的 Redis 地址、Milvus 地址、ES 地址、元数据库名、权限默认模式和 `RAG_CORPUS` 当前为代码配置。将 `RAG_CORPUS` 调整为实际知识语料文件的路径。仅在 `.env` 添加同名变量不会覆盖这些常量。
 
 远程操作还需要设置 `JWT_SECRET_KEY`，与保存 SSH 凭据时使用的密钥一致。
 
@@ -221,51 +216,7 @@ curl -f 'http://127.0.0.1:8005/api/alerts?limit=1'
 
 当前应用入口未实现用户登录鉴权，默认按本地开发方式部署；公开服务需要补充访问控制。日志和 LLM 轨迹可能包含问题、SQL、查询结果与工具输出，提交仓库前应检查这些内容，并保管好 `.env` 与远程凭据。
 
-## 知识库流水线
-
-`handle/` 为知识库提供七阶段处理流程：
-
-```mermaid
-flowchart LR
-    A[1 文档生成] --> B[2 文档解析]
-    B --> C[3 文档分块]
-    C --> D[4 向量化入库]
-    D --> E[5 混合检索]
-    E --> F[6 重排]
-    F --> G[7 RAG 评估]
-```
-
-| 阶段 | 工作内容 | 文档 |
-| --- | --- | --- |
-| 1 | 从主题生成 DOCX、HTML、Markdown、PDF 等知识文档 | [文档生成](handle/stage1_generate/README.md) |
-| 2 | 多格式解析与结构化块提取 | [文档解析](handle/stage2_parse/README.md) |
-| 3 | LangChain 分块与按 H3 分块两种方案 | [文档分块](handle/stage3_chunk/README.md) |
-| 4 | embedding 生成与 Milvus 入库 | [向量化](handle/stage4_vectorize/README.md) |
-| 5 | 向量与 BM25 召回，RRF 融合 | [混合检索](handle/stage5_retrieval/README.md) |
-| 6 | Qwen Rerank 二次排序 | [重排](handle/stage6_rerank/README.md) |
-| 7 | 生成回答并通过 Ragas 评估 | [评估](handle/stage7_eval/README.md) |
-
-在仓库根目录创建流水线的独立环境：
-
-```bash
-cd handle
-python3 -m venv .venv
-.venv/bin/python -m pip install -r requirements.txt
-
-# 将现有分块向量化，写入 Milvus
-bash stage4_vectorize/run_vectorize.sh
-
-# 检索并重排
-bash stage6_rerank/run_rerank.sh "Linux服务器CPU使用率持续超过90%如何定位" \
-  --top-k 5 --candidate-k 20
-
-# 小批量评估
-bash stage7_eval/run_eval.sh --limit 5
-```
-
-运行前按各阶段文档配置模型凭据、语料路径、embedding 和 Milvus 服务。文档生成、云端重排、回答生成及评估可能调用计费 API。已有评估产物不代表完整测试集已评测完成，结果应以本次运行的样本范围为准。
-
-### 构建 SQL 召回索引
+## 构建 SQL 召回索引
 
 SQL 召回元数据由 `schema_meta.yaml` 定义，离线构建时会写入 MySQL 元数据库、Milvus 集合和 Elasticsearch 索引。在 `it_agent/` 目录执行：
 
@@ -274,7 +225,7 @@ SQL 召回元数据由 `schema_meta.yaml` 定义，离线构建时会写入 MySQ
   --conf backend/sql/schema_meta.yaml
 ```
 
-该命令需要相应服务可用，并具备元数据建表及索引写入权限。详细流程见 [SQL 语义召回说明](it_agent/backend/sql/recall/README.md)。
+该命令需要相应服务可用，并具备元数据建表及索引写入权限。
 
 ## 项目结构
 
@@ -395,11 +346,3 @@ curl -N -G 'http://127.0.0.1:8005/api/chat' \
 
 </details>
 
-## 进一步阅读
-
-- [应用说明](it_agent/README.md)
-- [知识库流水线说明](handle/README.md)
-- [SQL 召回与元数据说明](it_agent/backend/sql/recall/README.md)
-- [项目介绍](it_agent_项目介绍.md)
-
-本文以当前代码结构与启动方式为准；子模块文档中的历史目录、路径或配置可能需要按实际环境调整。
