@@ -1,6 +1,3 @@
-<img width="3018" height="1536" alt="image" src="https://github.com/user-attachments/assets/dbb0e350-0b22-4db7-942a-7cc9267c2fd4" />
-<img width="3024" height="1526" alt="image" src="https://github.com/user-attachments/assets/b1a02ede-d51f-4541-85c6-b9411889ccb0" /><div align="center">
-
 # AIOps · SQL Insight
 
 **面向 IT 运维的多智能体助手：自然语言查询、故障调查、知识检索与修复执行**
@@ -345,4 +342,6 @@ curl -N -G 'http://127.0.0.1:8005/api/chat' \
 语音服务使用 DashScope，独立于对话模型后端，需有效 API Key 和 `ffmpeg`。当前实际 ASR 模型由 `backend/config.py` 中的 `ASR_MODEL` 常量指定。
 
 </details>
+<img width="3018" height="1536" alt="image" src="https://github.com/user-attachments/assets/dbb0e350-0b22-4db7-942a-7cc9267c2fd4" />
+<img width="3024" height="1526" alt="image" src="https://github.com/user-attachments/assets/b1a02ede-d51f-4541-85c6-b9411889ccb0" /><div align="center">
 
